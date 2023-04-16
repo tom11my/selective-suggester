@@ -1,6 +1,8 @@
 node_modules
 testing
+out
 .vscode
 .vscodeignore
 .eslintrc.json
 package-lock.json
+.env

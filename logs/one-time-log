@@ -1,0 +1,19 @@
+{
+    "id": "cmpl-75s19pZ0NDWrH4FD8k4gJ0S4gaaLm",
+    "object": "text_completion",
+    "created": 1681633639,
+    "model": "text-davinci-003",
+    "choices": [
+        {
+            "text": "\n\nSUGGESTION 1: const n = noise(i * 0.2, j * 0.2);\n\nSUGGESTION 2: const n = noise(i * 0.3, j * 0.3);\n\nSUGGESTION 3: const n = noise(i * 0.4, j * 0.4);",
+            "index": 0,
+            "logprobs": null,
+            "finish_reason": "stop"
+        }
+    ],
+    "usage": {
+        "prompt_tokens": 63,
+        "completion_tokens": 78,
+        "total_tokens": 141
+    }
+}

@@ -6,53 +6,43 @@ exports.deactivate = exports.activate = void 0;
 const vscode = require("vscode");
 const path = require("path");
 const fs = require("fs");
+const completion_1 = require("./completion"); // Import the SuggestionCompletionProvider class
+const LANG = "javascript";
 // Type "suggester" in command pallete of Ext Host Window to start
 function activate(context) {
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log('Congratulations, your extension "selective-suggester" is now active!');
-    const dataFilePath = path.join(context.extensionPath, "testing/data.json");
-    let showInfoBox = vscode.commands.registerCommand("selective-suggester.suggester", () => {
-        vscode.window.showInformationMessage("Hello World from selective-suggester!" + dataFilePath);
+    // register completion provider
+    vscode.window.showInformationMessage("Extension suggester is now active!");
+    const provider = vscode.languages.registerCompletionItemProvider({ scheme: "file", language: LANG }, new completion_1.SuggestionCompletionProvider());
+    context.subscriptions.push(provider);
+    // TODO: Make tab work normally when no selection is active when its pressed
+    // register command to handle tab keypress
+    const handleTabCommand = vscode.commands.registerCommand("selective-suggester.handleTabKeypress", async () => {
+        vscode.window.showInformationMessage("Tab pressed");
+        const editor = vscode.window.activeTextEditor;
+        if (editor && !editor.selection.isEmpty) {
+            await vscode.commands.executeCommand("editor.action.triggerSuggest");
+        }
     });
+    context.subscriptions.push(handleTabCommand);
+    let showInfoBox = vscode.commands.registerCommand("selective-suggester.suggester", () => { });
     context.subscriptions.push(showInfoBox);
-    // read data from dataFilePath into lineMovements
-    let lineMovements = {};
-    if (fs.existsSync(dataFilePath)) {
-        lineMovements = JSON.parse(fs.readFileSync(dataFilePath, "utf8"));
+    const selectionStoragePath = path.join(context.extensionPath, "testing/data.json" // serialization in local testing folder
+    );
+    let selections = [];
+    if (fs.existsSync(selectionStoragePath)) {
+        selections = JSON.parse(fs.readFileSync(selectionStoragePath, "utf8"));
     }
-    context.subscriptions.push(vscode.window.onDidChangeTextEditorSelection((e) => {
-        updateHighlightDecoration(e.textEditor);
-        recordLineMovement(e.textEditor);
-    }), vscode.window.onDidChangeActiveTextEditor((editor) => {
-        if (editor) {
-            updateHighlightDecoration(editor);
-        }
-    }));
-    const highlightDecorationType = vscode.window.createTextEditorDecorationType({
-        backgroundColor: "rgba(255, 0, 0, 0.2)",
-    });
-    function updateHighlightDecoration(editor) {
-        const currentLine = editor.selection.active.line;
-        const range = editor.document.lineAt(currentLine).range;
-        editor.setDecorations(highlightDecorationType, [range]);
-    }
-    function recordLineMovement(editor) {
-        const fileName = editor.document.fileName;
-        if (!lineMovements.hasOwnProperty(fileName)) {
-            lineMovements[fileName] = 0;
-        }
-        lineMovements[fileName] += 1;
-        saveData();
-    }
-    function saveData() {
-        try {
-            fs.writeFileSync(dataFilePath, JSON.stringify(lineMovements), "utf8");
-        }
-        catch (err) {
-            console.error("Error writing file", err);
-        }
-    }
+    // function saveData() {
+    //     try {
+    //         fs.writeFileSync(
+    //             selectionStoragePath,
+    //             JSON.stringify(selections),
+    //             "utf8"
+    //         );
+    //     } catch (err) {
+    //         console.error("Error writing file", err);
+    //     }
+    // }
 }
 exports.activate = activate;
 // This method is called when your extension is deactivated

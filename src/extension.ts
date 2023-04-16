@@ -1,74 +1,65 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
-import * as os from "os";
 import * as path from "path";
 import * as fs from "fs";
+import Suggestion from "./suggestion";
+import { Selection } from "vscode";
+import { SuggestionCompletionProvider } from "./completion"; // Import the SuggestionCompletionProvider class
 
+const LANG = "javascript";
 // Type "suggester" in command pallete of Ext Host Window to start
 export function activate(context: vscode.ExtensionContext) {
-    // Use the console to output diagnostic information (console.log) and errors (console.error)
-    // This line of code will only be executed once when your extension is activated
-    console.log(
-        'Congratulations, your extension "selective-suggester" is now active!'
+    // register completion provider
+    vscode.window.showInformationMessage("Extension suggester is now active!");
+    const provider = vscode.languages.registerCompletionItemProvider(
+        { scheme: "file", language: LANG },
+        new SuggestionCompletionProvider()
     );
+    context.subscriptions.push(provider);
 
-    const dataFilePath = path.join(context.extensionPath, "testing/data.json");
+    // TODO: Make tab work normally when no selection is active when its pressed
+    // register command to handle tab keypress
+    const handleTabCommand = vscode.commands.registerCommand(
+        "selective-suggester.handleTabKeypress",
+        async () => {
+            vscode.window.showInformationMessage("Tab pressed");
+            const editor = vscode.window.activeTextEditor;
+            if (editor && !editor.selection.isEmpty) {
+                await vscode.commands.executeCommand(
+                    "editor.action.triggerSuggest"
+                );
+            }
+        }
+    );
+    context.subscriptions.push(handleTabCommand);
+
     let showInfoBox = vscode.commands.registerCommand(
         "selective-suggester.suggester",
-        () => {
-            vscode.window.showInformationMessage(
-                "Hello World from selective-suggester!" + dataFilePath
-            );
-        }
+        () => {}
     );
     context.subscriptions.push(showInfoBox);
-    // read data from dataFilePath into lineMovements
-    let lineMovements: { [key: string]: number } = {};
-    if (fs.existsSync(dataFilePath)) {
-        lineMovements = JSON.parse(fs.readFileSync(dataFilePath, "utf8"));
-    }
-    context.subscriptions.push(
-        vscode.window.onDidChangeTextEditorSelection((e) => {
-            updateHighlightDecoration(e.textEditor);
-            recordLineMovement(e.textEditor);
-        }),
-        vscode.window.onDidChangeActiveTextEditor((editor) => {
-            if (editor) {
-                updateHighlightDecoration(editor);
-            }
-        })
+
+    const selectionStoragePath = path.join(
+        context.extensionPath,
+        "testing/data.json" // serialization in local testing folder
     );
-    const highlightDecorationType =
-        vscode.window.createTextEditorDecorationType({
-            backgroundColor: "rgba(255, 0, 0, 0.2)",
-        });
+    let selections: Array<Suggestion> = [];
+    if (fs.existsSync(selectionStoragePath)) {
+        selections = JSON.parse(fs.readFileSync(selectionStoragePath, "utf8"));
+    }
 
-    function updateHighlightDecoration(editor: vscode.TextEditor) {
-        const currentLine = editor.selection.active.line;
-        const range = editor.document.lineAt(currentLine).range;
-        editor.setDecorations(highlightDecorationType, [range]);
-    }
-    function recordLineMovement(editor: vscode.TextEditor) {
-        const fileName = editor.document.fileName;
-        if (!lineMovements.hasOwnProperty(fileName)) {
-            lineMovements[fileName] = 0;
-        }
-        lineMovements[fileName] += 1;
-        saveData();
-    }
-    function saveData() {
-        try {
-            fs.writeFileSync(
-                dataFilePath,
-                JSON.stringify(lineMovements),
-                "utf8"
-            );
-        } catch (err) {
-            console.error("Error writing file", err);
-        }
-    }
+    // function saveData() {
+    //     try {
+    //         fs.writeFileSync(
+    //             selectionStoragePath,
+    //             JSON.stringify(selections),
+    //             "utf8"
+    //         );
+    //     } catch (err) {
+    //         console.error("Error writing file", err);
+    //     }
+    // }
 }
-
 // This method is called when your extension is deactivated
 export function deactivate() {}
