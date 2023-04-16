@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import Suggestion from "./suggestion";
+import { TextDecoder } from "util";
 export class SuggestionCompletionProvider
     implements vscode.CompletionItemProvider
 {
@@ -8,7 +9,6 @@ export class SuggestionCompletionProvider
         position: vscode.Position,
         token: vscode.CancellationToken
     ): Promise<vscode.CompletionList | undefined> {
-        vscode.window.showInformationMessage("Completion provider called");
         const editor = vscode.window.activeTextEditor;
         if (editor) {
             const selection = editor.selection;
@@ -20,9 +20,14 @@ export class SuggestionCompletionProvider
                     selection
                 );
                 const selectionText = suggestion.getSelectionContent();
-                vscode.window.showInformationMessage(selectionText);
+                vscode.window.showInformationMessage(document.fileName);
+                const fileContents = await readFileContent(
+                    vscode.Uri.file(document.fileName)
+                );
+
                 const suggestions = await suggestion.suggestAlternatives(
-                    selectionText
+                    selectionText,
+                    fileContents
                 );
                 const completionItems = suggestions.map((suggestion, index) => {
                     const completionItem = new vscode.CompletionItem(
@@ -41,5 +46,16 @@ export class SuggestionCompletionProvider
             }
             return undefined;
         }
+    }
+}
+
+async function readFileContent(uri: vscode.Uri): Promise<string> {
+    try {
+        const fileData = await vscode.workspace.fs.readFile(uri);
+        const content = new TextDecoder().decode(fileData);
+        return content;
+    } catch (err) {
+        console.error(`Error reading file: ${err}`);
+        return "";
     }
 }

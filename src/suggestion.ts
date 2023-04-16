@@ -1,6 +1,6 @@
 import { Selection, TextEditor, Range } from "vscode";
 import { getAlternativesWithoutContext } from "./api";
-import { PROMPT } from "./prompts";
+import { getPromptWithContext, getPromptWithoutContext } from "./prompts";
 
 enum Status {
     INITITAL = "INITITAL",
@@ -29,10 +29,18 @@ export default class Suggestion {
         this.status = Status.INITITAL;
         this.suggestions = [];
     }
-    async suggestAlternatives(selectionText: string): Promise<Array<string>> {
+    async suggestAlternatives(
+        selectionText: string,
+        sourceText: string
+    ): Promise<Array<string>> {
         this.status = Status.SUGGESTING;
+        // lower token testing, missing file context
+        // const alternatives: Array<string> = await getAlternativesWithoutContext(
+        //     getPromptWithoutContext(selectionText)
+        // );
+        // high fidelity, includes file context
         const alternatives: Array<string> = await getAlternativesWithoutContext(
-            PROMPT + selectionText
+            getPromptWithContext(selectionText, sourceText)
         );
         return alternatives;
     }
